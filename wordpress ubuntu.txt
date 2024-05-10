@@ -1,0 +1,85 @@
+step 1	
+make this bash script
+
+#!/bin/bash
+
+# Check if the script is run as root
+if [ "$(id -u)" -ne 0 ]; then
+    echo "This script must be run as root" 1>&2
+    exit 1
+fi
+
+# Update packages
+apt update
+apt upgrade -y
+
+# Install required packages
+apt install -y apache2 mysql-server php php-mysql
+
+# Start Apache
+systemctl start apache2
+systemctl enable apache2
+
+# Configure MySQL
+mysql_secure_installation
+
+# Create a MySQL database and user for WordPress
+mysql -u root -p <<MYSQL_SCRIPT
+CREATE DATABASE wordpress;
+CREATE USER 'wordpress'@'localhost' IDENTIFIED BY 'your_password_here';
+GRANT ALL PRIVILEGES ON wordpress.* TO 'wordpress'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+MYSQL_SCRIPT
+
+# Download and extract WordPress
+cd /tmp
+wget -c http://wordpress.org/latest.tar.gz
+tar -xzvf latest.tar.gz
+rm latest.tar.gz
+mv wordpress /var/www/html/
+
+# Set permissions
+chown -R www-data:www-data /var/www/html/wordpress
+chmod -R 755 /var/www/html/wordpress
+
+# Configure Apache
+cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/wordpress.conf
+sed -i 's/\/var\/www\/html/\/var\/www\/html\/wordpress/g' /etc/apache2/sites-available/wordpress.conf
+a2ensite wordpress.conf
+systemctl reload apache2
+
+# Cleanup
+apt autoremove -y
+
+echo "WordPress installation completed successfully."
+
+
+
+
+step 2
+copy <publicip/wordpress>
+
+1.first time login into mysql .
+#sudo mysql -u root
+2.second time login with passwrd into mysql.
+#mysql -u root -p'Admin@123'
+3.setup password 
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'Admin@123';
+4.CREATE USER 'wp_user'@localhost IDENTIFIED BY 'Admin@123'; 
+5.GRANT ALL PRIVILEGES ON wordpress.* TO 'wp_user'@localhost;
+6. login to wordpress gui. copy <publicip/wordpress>
+
+passdword :Admin@123
+databasename:wordpress
+username:wp_user
+
+
+if we need to host website 
+cd /var/www/html
+git clone <repolink>
+ls
+<ipaddress/reponame>
+
+
+
